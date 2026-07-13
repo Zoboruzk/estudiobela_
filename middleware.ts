@@ -24,17 +24,12 @@ async function resolveBusiness(
 }
 
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Renova a sessão do Supabase só nas rotas que realmente usam
-  // autenticação (/painel e /login). Isso evita uma chamada de rede ao
-  // Supabase Auth em TODA navegação — incluindo o fluxo público de
-  // agendamento (/, /agendar, /sucesso), que não depende de sessão nenhuma
-  // e não deve pagar esse custo de latência. O response resultante carrega
-  // os cookies atualizados; seguimos usando ELE (não um NextResponse.next()
-  // novo) no restante da função, para não perder essa renovação.
-  const needsAuth = pathname.startsWith("/painel") || pathname.startsWith("/login");
-  const sessionResponse = needsAuth ? await updateSupabaseSession(req) : NextResponse.next();
+  // Renova a sessão do Supabase primeiro (necessário para /painel e
+  // qualquer rota autenticada — ver lib/supabase/middleware.ts). O response
+  // resultante carrega os cookies atualizados; seguimos usando ELE (não um
+  // NextResponse.next() novo) no restante da função, para não perder essa
+  // renovação.
+  const sessionResponse = await updateSupabaseSession(req);
 
   const host = req.headers.get("host") || "";
   const hostname = host.split(":")[0]; // remove porta em dev (localhost:3000)
@@ -49,7 +44,11 @@ export async function middleware(req: NextRequest) {
   } else if (
     hostname !== ROOT_DOMAIN &&
     hostname !== `www.${ROOT_DOMAIN}` &&
-    hostname !== "localhost"
+    hostname !== "localhost" &&
+    !hostname.endsWith(".vercel.app") // domínio temporário da Vercel (sem
+    // subdomínio próprio ainda) — trata como raiz, sem buscar tenant. Isso é
+    // uma bengala válida até existir o primeiro domínio customizado real;
+    // nesse ponto, revisar junto com o TODO do resolveBusiness acima.
   ) {
     // Ex: studiobela.com.br -> domínio customizado do cliente
     lookupValue = hostname;

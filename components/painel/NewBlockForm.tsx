@@ -10,6 +10,7 @@ import { professionals } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 
 export function NewBlockForm() {
+  const [scope, setScope] = useState<"professional" | "business">("business");
   const [professionalId, setProfessionalId] = useState(professionals[0]?.id ?? "");
   const [allDay, setAllDay] = useState(true);
   const [date, setDate] = useState("");
@@ -30,7 +31,8 @@ export function NewBlockForm() {
 
     startTransition(async () => {
       const result = await createScheduleBlock({
-        professionalId,
+        scope,
+        professionalId: scope === "professional" ? professionalId : undefined,
         dateISO: date,
         allDay,
         startTime: allDay ? undefined : startTime,
@@ -55,20 +57,57 @@ export function NewBlockForm() {
       <h2 className="text-sm font-medium text-foreground">Novo bloqueio</h2>
 
       <div className="space-y-1.5">
-        <Label htmlFor="professional">Profissional</Label>
-        <select
-          id="professional"
-          value={professionalId}
-          onChange={(e) => setProfessionalId(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {professionals.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        <Label>Quem é afetado</Label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setScope("business")}
+            className={cn(
+              "flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+              scope === "business"
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-card text-foreground hover:border-accent",
+            )}
+          >
+            Negócio inteiro
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope("professional")}
+            className={cn(
+              "flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+              scope === "professional"
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-card text-foreground hover:border-accent",
+            )}
+          >
+            Só uma profissional
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {scope === "business"
+            ? "Bloqueia todas as profissionais de uma vez — ideal para feriados ou para quem atende sozinho(a)."
+            : "Bloqueia a agenda de apenas uma profissional específica."}
+        </p>
       </div>
+
+      {scope === "professional" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="professional">Profissional</Label>
+          <select
+            id="professional"
+            value={professionalId}
+            onChange={(e) => setProfessionalId(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {professionals.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <Label htmlFor="date">Data</Label>

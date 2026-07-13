@@ -72,7 +72,8 @@ export async function getAvailableSlots(
     supabase
       .from("schedule_blocks")
       .select("starts_at, ends_at")
-      .eq("professional_id", professionalId)
+      .eq("business_id", business.id)
+      .or(`professional_id.eq.${professionalId},professional_id.is.null`)
       .lt("starts_at", dayEnd.toISOString())
       .gt("ends_at", dayStart.toISOString()),
     supabase

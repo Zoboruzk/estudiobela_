@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LinkPendingSpinner } from "@/components/shared/LinkPendingSpinner";
 import { business } from "@/lib/mockData";
 
 export function Hero() {
@@ -25,6 +26,7 @@ export function Hero() {
             <Button asChild size="lg" className="rounded-full px-6">
               <Link href="/agendar">
                 Agendar Horário <ArrowRight className="ml-1 h-4 w-4" />
+                <LinkPendingSpinner />
               </Link>
             </Button>
             <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">

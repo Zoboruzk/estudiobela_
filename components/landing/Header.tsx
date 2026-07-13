@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LinkPendingSpinner } from "@/components/shared/LinkPendingSpinner";
 import { business } from "@/lib/mockData";
 
 export function Header() {
@@ -16,7 +17,9 @@ export function Header() {
           </span>
         </Link>
         <Button asChild size="sm" className="rounded-full">
-          <Link href="/agendar">Agendar</Link>
+          <Link href="/agendar">
+            Agendar <LinkPendingSpinner />
+          </Link>
         </Button>
       </div>
     </header>

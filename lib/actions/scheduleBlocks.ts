@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { business } from "@/lib/mockData";
 
 // Mesma suposição de fuso documentada em lib/actions/availability.ts:
 // navegador do cliente = fuso do negócio = America/Sao_Paulo (UTC-3 fixo,
@@ -12,12 +13,16 @@ const BUSINESS_TZ_OFFSET = "-03:00";
 
 const CreateBlockSchema = z
   .object({
-    professionalId: z.string().uuid(),
+    scope: z.enum(["professional", "business"]),
+    professionalId: z.string().uuid().optional(),
     dateISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
     allDay: z.boolean(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     reason: z.string().trim().max(200).optional(),
+  })
+  .refine((v) => v.scope === "business" || !!v.professionalId, {
+    message: "Escolha a profissional.",
   })
   .refine((v) => v.allDay || (v.startTime && v.endTime), {
     message: "Informe o horário de início e fim.",
@@ -40,7 +45,7 @@ export async function createScheduleBlock(
     return { success: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { professionalId, dateISO, allDay, startTime, endTime, reason } = parsed.data;
+  const { scope, professionalId, dateISO, allDay, startTime, endTime, reason } = parsed.data;
 
   const startsAt = allDay
     ? `${dateISO}T00:00:00${BUSINESS_TZ_OFFSET}`
@@ -53,12 +58,12 @@ export async function createScheduleBlock(
 
   // Usa o cliente com sessão do usuário (não o admin), de propósito — isso
   // faz o INSERT passar pela RLS `schedule_blocks_manage_staff` de verdade,
-  // confirmando que quem está criando o bloqueio é staff do negócio dono
-  // desse profissional.
+  // confirmando que quem está criando o bloqueio é staff do negócio.
   const supabase = await createClient();
 
   const { error } = await supabase.from("schedule_blocks").insert({
-    professional_id: professionalId,
+    professional_id: scope === "professional" ? professionalId : null,
+    business_id: scope === "business" ? business.id : null,
     starts_at: startsAt,
     ends_at: endsAt,
     reason: reason || null,
